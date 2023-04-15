@@ -10,6 +10,7 @@ import 'package:settings_ui/settings_ui.dart';
 SettingsOptions settingsOptions = SettingsOptions();
 late QualifiedCharacteristic rxCharacteristic;
 late QualifiedCharacteristic txCharacteristic;
+bool foundDevice = false;
 bool deviceConnected = false;
 final flutterReactiveBle = FlutterReactiveBle();
 
@@ -58,15 +59,13 @@ class _StartPageState extends State<StartPage> {
       permGranted = true;
     }
 // Main scanning logic happens here ⤵️
-    bool foundDevice = false;
     if (permGranted) {
       _scanStream = flutterReactiveBle
           .scanForDevices(withServices: [serviceUuid]).listen((device) {
         if (device.name == 'ENCHESS') {
-          setState(() {
-            foundDevice = true;
-            enchessDevice = device;
-          });
+          foundDevice = true;
+          enchessDevice = device;
+          _connectToDevice();
         }
       });
     }
@@ -81,7 +80,7 @@ class _StartPageState extends State<StartPage> {
         .connectToAdvertisingDevice(
             id: enchessDevice.id,
             prescanDuration: const Duration(seconds: 1),
-            withServices: [serviceUuid, rxcharacteristicUuid, txcharacteristicUuid]);
+            withServices: [serviceUuid]);
     currentConnectionStream.listen((event) {
       switch (event.connectionState) {
         // We're connected and good to go!
@@ -114,7 +113,7 @@ class _StartPageState extends State<StartPage> {
   void initState() {
     super.initState();
 
-    _startScan().then((value) { if (value) _connectToDevice(); });
+    _startScan();
   }
 
   @override
@@ -200,11 +199,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   List<int> settingsToInt() {
-    return <int> [0xff,];
+    return <int> [0x41,];
   }
   void writeSettings() {
     if (deviceConnected) {
-      flutterReactiveBle.writeCharacteristicWithResponse(rxCharacteristic, value: settingsToInt());
+      flutterReactiveBle.writeCharacteristicWithResponse(txCharacteristic, value: settingsToInt());
     }
   }
 
