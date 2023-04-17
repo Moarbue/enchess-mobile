@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io' show Platform;
+import 'dart:convert';
 
 import 'package:location_permissions/location_permissions.dart';
 import 'package:flutter/material.dart';
@@ -167,6 +168,18 @@ class SettingsOptions {
   bool darkMode = false;
   int moveTime = 10;
   bool color = true; // true = white, false = black
+
+  // SettingsOptions({this.darkMode = false, this.moveTime = 10, this.color = true});
+  SettingsOptions();
+
+  SettingsOptions.fromJson(Map<String, dynamic> json)
+      : moveTime = json['moveTime'],
+        color    = json['color'];
+
+  Map<String, dynamic> toJson() => {
+        'moveTime': moveTime,
+        'color'   : color,
+      };
 }
 
 class SettingsPage extends StatefulWidget {
@@ -199,7 +212,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   List<int> settingsToInt() {
-    return <int> [0x41,];
+    JsonUtf8Encoder encoder = JsonUtf8Encoder();
+    return encoder.convert(settingsOptions);
   }
   void writeSettings() {
     if (deviceConnected) {
