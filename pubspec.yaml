@@ -20,3 +20,17 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+  - assets/chessboard.png
+  - assets/white_pawn.png
+  - assets/white_king.png
+  - assets/white_queen.png
+  - assets/white_bishop.png
+  - assets/white_rook.png
+  - assets/white_knight.png
+  - assets/black_pawn.png
+  - assets/black_king.png
+  - assets/black_queen.png
+  - assets/black_bishop.png
+  - assets/black_rook.png
+  - assets/black_knight.png
