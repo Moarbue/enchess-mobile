@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ffi';
 import 'dart:io' show Platform;
 import 'dart:convert';
 
@@ -15,6 +14,38 @@ bool foundDevice = false;
 bool deviceConnected = false;
 final flutterReactiveBle = FlutterReactiveBle();
 
+enum Pieces {
+  whitePawn,
+  whiteKing,
+  whiteQueen,
+  whiteBishop,
+  whiteRook,
+  whiteKnight,
+  blackPawn,
+  blackKing,
+  blackQueen,
+  blackBishop,
+  blackRook,
+  blackKnight,
+  none,
+}
+List<Pieces> pieces = List.filled(64, Pieces.whitePawn);
+List<AssetImage> figures = <AssetImage> [
+  const AssetImage('assets/white_pawn.png'),
+  const AssetImage('assets/white_king.png'), 
+  const AssetImage('assets/white_queen.png'), 
+  const AssetImage('assets/white_bishop.png'), 
+  const AssetImage('assets/white_rook.png'), 
+  const AssetImage('assets/white_knight.png'), 
+
+  const AssetImage('assets/black_pawn.png'),
+  const AssetImage('assets/black_king.png'), 
+  const AssetImage('assets/black_queen.png'), 
+  const AssetImage('assets/black_bishop.png'), 
+  const AssetImage('assets/black_rook.png'), 
+  const AssetImage('assets/black_knight.png'), 
+];
+
 
 void main() {
   runApp(const MainApp());
@@ -25,8 +56,12 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: StartPage(),
+    return MaterialApp(
+      home: const StartPage(),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+      ),
     );
   }
 }
@@ -131,7 +166,7 @@ class _StartPageState extends State<StartPage> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const Placeholder(),
+                    builder: (context) => const GamePage(),
                   ),
                 );
               },
@@ -164,12 +199,122 @@ class _StartPageState extends State<StartPage> {
   }
 }
 
+class GamePage extends StatefulWidget {
+  const GamePage({super.key});
+
+  @override
+  State<GamePage> createState() => _GamePageState();
+}
+
+class _GamePageState extends State<GamePage> {
+  int elapsedTime = 0;
+  String timeformated = '00 : 00 : 00';
+  late Timer timeCounter;
+
+  int ptbRatio = 12; 
+
+  double _calcChessboardSize(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+    return width > height ? height : width;
+  }
+
+  Stack _assembleChessboard() {
+    return Stack(
+      children: [
+        Image(
+          image: const AssetImage('assets/chessboard.png'),
+          width: _calcChessboardSize(context),
+          height: _calcChessboardSize(context),
+        ),
+        ...List.generate(8, (r) {
+          return Padding(
+            padding: EdgeInsets.only(top: _calcChessboardSize(context) * ( (2 * r + 1) * (1 / 8 - 1 / ptbRatio) * 0.5 + r / ptbRatio)),
+            child: Row(
+              children:
+                List.generate(8, (c) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _calcChessboardSize(context) * (1 / 8 - 1 / ptbRatio) * 0.5),
+                    child: (pieces[c * 8 + r] != Pieces.none) ? 
+                      Image(
+                        image: figures[pieces[c * 8 + r].index],
+                        width: _calcChessboardSize(context) / ptbRatio,
+                        height: _calcChessboardSize(context) / ptbRatio,
+                      )
+                      : SizedBox(width: _calcChessboardSize(context) / ptbRatio, height: _calcChessboardSize(context) / ptbRatio,),
+                  );
+                }),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    timeCounter = Timer.periodic(const Duration(seconds: 1),
+      (timer) { 
+        setState(() { 
+            elapsedTime++; 
+            timeformated  = (elapsedTime ~/ 3600).toString().padLeft(2, '0');
+            timeformated += ':';
+            timeformated += ((elapsedTime % 3600) ~/ 60).toString().padLeft(2, '0');
+            timeformated += ':';
+            timeformated += (elapsedTime % 60).toInt().toString().padLeft(2, '0');
+          }
+        ); 
+      }
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title:  const Text('Enchess'),
+        leading:  IconButton(
+          onPressed: () {Navigator.pop(context);},
+          icon: const Icon(Icons.arrow_back),
+        )
+      ),
+      body: Column(
+        children: [
+          Row(
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 15.0),
+                child: Text('Text'),
+              ),
+              const Spacer(),
+              const Center(child: Text('Text')),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(right: 15.0),
+                child: Text(timeformated),
+              ),
+            ],
+          ),
+          _assembleChessboard(),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    timeCounter.cancel();
+    super.dispose();
+  }
+}
+
 class SettingsOptions {
   bool darkMode = false;
   int moveTime = 10;
   bool color = true; // true = white, false = black
 
-  // SettingsOptions({this.darkMode = false, this.moveTime = 10, this.color = true});
   SettingsOptions();
 
   SettingsOptions.fromJson(Map<String, dynamic> json)
