@@ -29,7 +29,6 @@ enum Pieces {
   blackKnight,
   none,
 }
-List<Pieces> pieces = List.filled(64, Pieces.none);
 List<AssetImage> figures = <AssetImage> [
   const AssetImage('assets/white_pawn.png'),
   const AssetImage('assets/white_king.png'), 
@@ -130,13 +129,8 @@ class _StartPageState extends State<StartPage> {
                 serviceId: serviceUuid,
                 characteristicId: txcharacteristicUuid,
                 deviceId: event.deviceId);
-            flutterReactiveBle.requestMtu(deviceId: event.deviceId, mtu: 132);
+            flutterReactiveBle.requestMtu(deviceId: event.deviceId, mtu: 264);
             setState(() {
-              flutterReactiveBle.subscribeToCharacteristic(rxCharacteristic).listen((data) {
-                  Iterable l = json.decode(utf8.decode(data));
-                  pieces = List<Pieces>.from(l.map((index) => Pieces.values[index]));
-                }
-              );
               deviceConnected = true;
             });
             break;
@@ -216,6 +210,7 @@ class _GamePageState extends State<GamePage> {
   int elapsedTime = 0;
   String timeformated = '00 : 00 : 00';
   late Timer timeCounter;
+  List<Pieces> pieces = List.filled(64, Pieces.none);
 
   int ptbRatio = 12; 
 
@@ -273,6 +268,14 @@ class _GamePageState extends State<GamePage> {
         ); 
       }
     );
+    if (deviceConnected) {
+      flutterReactiveBle.subscribeToCharacteristic(rxCharacteristic).listen((data) {
+          Iterable l = json.decode(utf8.decode(data));
+          pieces = List<Pieces>.from(l.map((index) => Pieces.values[index]));
+          print(utf8.decode(data));
+        }
+      );
+    }
   }
 
   @override
