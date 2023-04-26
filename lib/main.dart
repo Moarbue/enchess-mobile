@@ -14,6 +14,27 @@ bool foundDevice = false;
 bool deviceConnected = false;
 final flutterReactiveBle = FlutterReactiveBle();
 
+enum Cols {
+  cA,
+  cB,
+  cC,
+  cD,
+  cE,
+  cF,
+  cG,
+  cH,
+}
+enum Rows {
+  r1,
+  r2,
+  r3,
+  r4,
+  r5,
+  r6,
+  r7,
+  r8,
+}
+
 enum Pieces {
   whitePawn,
   whiteKing,
@@ -199,6 +220,28 @@ class _StartPageState extends State<StartPage> {
   }
 }
 
+class Move {
+  Cols prevCol = Cols.cA;
+  Rows prevRow = Rows.r1;
+  Cols newCol  = Cols.cA;
+  Rows newRow  = Rows.r1;
+
+  Move();
+
+  Move.fromJson(Map<String, dynamic> json)
+      : prevCol = Cols.values[json['prevCol']],
+        prevRow = Rows.values[json['prevRow']],
+        newCol  = Cols.values[json['actCol' ]],
+        newRow  = Rows.values[json['actRow' ]];
+
+  Map<String, dynamic> toJson() => {
+        'prevCol' : prevCol.index,
+        'prevRow' : prevRow.index,
+        'newCol'  : newCol.index,
+        'newRow'  : newRow.index,
+      };
+}
+
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
 
@@ -211,6 +254,9 @@ class _GamePageState extends State<GamePage> {
   String timeformated = '00 : 00 : 00';
   late Timer timeCounter;
   List<Pieces> pieces = List.filled(64, Pieces.none);
+  TextEditingController prevPosController = TextEditingController();
+  TextEditingController newPosController  = TextEditingController();
+  Move actMove = Move();
 
   int ptbRatio = 12; 
 
@@ -252,6 +298,33 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
+  SizedBox _numberTextField(TextEditingController controller, void Function(String)? onChanged, hint, double width) {
+    return SizedBox(
+      width: width,
+      child: TextField(
+        onChanged: onChanged,
+        controller: controller,
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          contentPadding: const EdgeInsets.all(10),
+          filled: true,
+          hintText: hint,
+        ),
+      ),
+    );
+  }
+
+  List<int> moveToInt() {
+    actMove.prevCol = Cols.values[prevPosController.text.codeUnitAt(0) - 65];
+    actMove.prevRow = Rows.values[prevPosController.text.codeUnitAt(1) - 49];
+    actMove.newCol = Cols.values[newPosController.text.codeUnitAt(0) - 65];
+    actMove.newRow = Rows.values[newPosController.text.codeUnitAt(1) - 49];
+    JsonUtf8Encoder encoder = JsonUtf8Encoder();
+    return encoder.convert(actMove);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -272,7 +345,6 @@ class _GamePageState extends State<GamePage> {
       flutterReactiveBle.subscribeToCharacteristic(rxCharacteristic).listen((data) {
           Iterable l = json.decode(utf8.decode(data));
           pieces = List<Pieces>.from(l.map((index) => Pieces.values[index]));
-          print(utf8.decode(data));
         }
       );
     }
@@ -307,6 +379,37 @@ class _GamePageState extends State<GamePage> {
             ],
           ),
           _assembleChessboard(),
+          const SizedBox(height: 20,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _numberTextField(
+                prevPosController, 
+                (value) { 
+                },
+                "from",
+                60
+              ),
+              const SizedBox(width: 10,),
+              const Text('-->'),
+              const SizedBox(width: 10,),
+              _numberTextField(
+                newPosController, 
+                (value) { 
+                },
+                "to",
+                60
+              ),
+              const SizedBox(width: 10,),
+              IconButton(
+                onPressed: () {
+                  if (deviceConnected) {
+                    flutterReactiveBle.writeCharacteristicWithoutResponse(txCharacteristic, value: moveToInt());
+                  }
+                }, 
+                icon: const Icon(Icons.check))
+            ],
+          )
         ],
       ),
     );
