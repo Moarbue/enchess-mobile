@@ -236,9 +236,9 @@ class _GamePageState extends State<GamePage> {
                 List.generate(8, (c) {
                   return Padding(
                     padding: EdgeInsets.symmetric(horizontal: _calcChessboardSize(context) * (1 / 8 - 1 / ptbRatio) * 0.5),
-                    child: (pieces[c * 8 + r] != Pieces.none) ? 
+                    child: (pieces[r * 8 + c] != Pieces.none) ? 
                       Image(
-                        image: figures[pieces[c * 8 + r].index],
+                        image: figures[pieces[r * 8 + c].index],
                         width: _calcChessboardSize(context) / ptbRatio,
                         height: _calcChessboardSize(context) / ptbRatio,
                       )
